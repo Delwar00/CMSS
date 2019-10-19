@@ -1,0 +1,58 @@
+*{
+	margin:0px;
+	padding:0px;
+	outline:0px;
+	}
+.well {
+		border:0;
+		border-radius:0;
+	}
+.dropdown a {
+	fotn-size:20px;
+	text-decoration:none;
+	cursor:pointer;
+}
+.dropdown i {
+	color:red;
+	padding-right:15px;
+}
+.dropdown sup{
+	color:black;
+}
+.header span{
+	font-size:16px;
+}
+.image-area img{
+	width:60px;
+	height:auto;
+}
+.dot {
+  height: 10px;
+  width: 10px;
+  background-color: blue;
+  border-radius: 50%;
+  display: inline-block;
+}
+.menu-area ul{
+	list-style:none;
+}
+.menu-area ul li{
+	padding:10px 0;
+}
+.menu-area ul li a{
+	font-size:16px;
+	color:black;
+	text-decoration: none;
+}
+/* .menu-area ul li:hover{
+	color:white;
+	background-color: #89C4F4;
+	padding:8px 10px;
+
+} */
+ul li ul{
+	padding-left:15px;
+}
+.standard{
+	padding:0;
+}
