@@ -1,71 +1,198 @@
-<p align="center"><img src="https://laravel.com/assets/img/components/logo-laravel.svg"></p>
+<?php
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+namespace App\Http\Controllers;
 
-## About Laravel
+use App\AcademicYear;
+use App\AllClass;
+use App\Exam;
+use App\ExamSchedule;
+use App\Subject;
+use Exception;
+use App\Suggestion;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+class SuggestionController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        //
+    }
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        $data['class_info']=AllClass::all();
+//        $data['exam_info']=Exam::all();
+        $data['academics_year']=AcademicYear::where('is_running',1)->first();
+        $data['exam_info']=Exam::join('a1_academic_years','b1_exams.academic_year_id','a1_academic_years.id')
+            ->select('a1_academic_years.start_year','b1_exams.*')
+            ->where('a1_academic_years.is_running',1)
+            ->get();
+        return view('admin.exam.exam_suggestion.add_exam_suggestion',$data);
+    }
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(),[
+            'title'         =>['required','string','max:255'],
+            'exam_id'       =>['required','integer'],
+            'class_id'      =>['required','integer'],
+            'subject_id'    =>['required','integer'],
+            'suggestion'     =>['required'],
+        ]);
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+        if ($validator->fails()) {
+             back()->withErrors($validator->errors());
+        } else {
+//            $id = Suggestion::insertGetId($request->except('_token', 'status'));
+//                if($request->hasFile('suggestion')){
+//                    $path = $request->file('suggestion')->store('Suggestion');
+//                    Suggestion::where('id','=',$id)->update([
+//                        'suggestion'=>$path,
+//                    ]);
+//                }
+            $insert_director = new Suggestion();
+            $insert_director->title = $request->title;
+            $insert_director->exam_id = $request->exam_id;
+            $insert_director->class_id = $request->class_id;
+            $insert_director->subject_id = $request->subject_id;
+            $insert_director->note = $request->note;
 
-## Learning Laravel
+            if ($request->hasFile('suggestion')) {
+                $file = $request->file('suggestion');
+                $original_name=$request->file('suggestion')->getClientOriginalName();
+                $image =Str::random(3) . '_' .$original_name;
+                $destinationPath = public_path() . '/uploads/sugg/';
+                $file->move($destinationPath, $image);
+                $insert_director->suggestion = $image;
+            }
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+            $insert_director->save();
+            return redirect()->back()->with('status', 'Suggestion Added Successfully!');
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1100 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost you and your team's skills by digging into our comprehensive video library.
+        }
+    }
 
-## Laravel Sponsors
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Suggestion  $suggestion
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Suggestion $suggestion,$id)
+    {
+        $data['exam_suggestion']=AllClass::find($id)->suggestion;
+        return view('admin.exam.exam_suggestion.exam_suggestion',$data);
+    }
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  \App\Suggestion  $suggestion
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Suggestion $suggestion,$id)
+    {
+        $data['suggestion']=Suggestion::find($id);
+        $data['class_info']=AllClass::all();
+//        $data['exam_info']=Exam::all();
+        $data['academics_year']=AcademicYear::where('is_running',1)->first();
+        $data['exam_info']=Exam::join('a1_academic_years','b1_exams.academic_year_id','a1_academic_years.id')
+            ->select('a1_academic_years.start_year','b1_exams.*')
+            ->where('a1_academic_years.is_running',1)
+            ->get();
+        return view('admin.exam.exam_suggestion.edit_exam_suggestion',$data);
+    }
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[British Software Development](https://www.britishsoftware.co)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- [UserInsights](https://userinsights.com)
-- [Fragrantica](https://www.fragrantica.com)
-- [SOFTonSOFA](https://softonsofa.com/)
-- [User10](https://user10.com)
-- [Soumettre.fr](https://soumettre.fr/)
-- [CodeBrisk](https://codebrisk.com)
-- [1Forge](https://1forge.com)
-- [TECPRESSO](https://tecpresso.co.jp/)
-- [Runtime Converter](http://runtimeconverter.com/)
-- [WebL'Agence](https://weblagence.com/)
-- [Invoice Ninja](https://www.invoiceninja.com)
-- [iMi digital](https://www.imi-digital.de/)
-- [Earthlink](https://www.earthlink.ro/)
-- [Steadfast Collective](https://steadfastcollective.com/)
-- [We Are The Robots Inc.](https://watr.mx/)
-- [Understand.io](https://www.understand.io/)
-- [Abdel Elrafa](https://abdelelrafa.com)
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Suggestion  $suggestion
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, Suggestion $suggestion,$id)
+    {
+        $validator = Validator::make($request->all(),[
+            'title'         =>['required','string','max:255'],
+            'exam_id'       =>['required','integer'],
+            'class_id'      =>['required','integer'],
+            'subject_id'    =>['required','integer'],
+            'suggestion'     =>['required'],
+        ]);
 
-## Contributing
+        if ($validator->fails()) {
+            back()->withErrors($validator->errors());
+        } else {
+            $edit_director = Suggestion::find($id);
+            $edit_director->title = $request->title;
+            $edit_director->exam_id = $request->exam_id;
+            $edit_director->class_id = $request->class_id;
+            $edit_director->subject_id = $request->subject_id;
+            $edit_director->note = $request->note;
+            if ($request->hasFile('suggestion')) {
+                $full_path=public_path() . '/uploads/sugg/'.$edit_director->suggestion;
+                if (file_exists($full_path)) {
+                    unlink($full_path);
+                }
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+                $file = $request->file('suggestion');
+                $original_name=$request->file('suggestion')->getClientOriginalName();
+                $image = Str::random(3) . '_' . $original_name;
+                $destinationPath = public_path() . '/uploads/sugg/';
+                $file->move($destinationPath, $image);
+                $edit_director->suggestion = $image;
+            }
 
-## Security Vulnerabilities
+            $edit_director->save();
+            //return $edit_director;
+            //$edit_director->save();
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+            return back()->with('status', 'Suggestion Updated Successfully!');
+        }
+    }
 
-## License
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Suggestion  $suggestion
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Suggestion $suggestion,$id)
+    {
+        try {
+            Suggestion::where('id',$id)->delete();
+        } catch (Exception $e) {
+            return back()->withError('Suggestion has Child/Childs. You must DELETE the Child/Childs first!')
+                ->with('server_error','Server Error Message :: '.$e->getMessage());
+        }
 
-The Laravel framework is open-source software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+        return back()->with('status', 'Suggestion Deleted Successfully!');
+    }
+    //depends on class get subject
+    public function subjectList(Request $request)
+    {
+        $string="";
+        $subjects=Subject::where('class_id','=',$request->class_id)->get();
+        foreach($subjects as $subject){
+            $string.="<option value='$subject->id'> $subject->name</option>";
+        }
+        echo $string;
+    }
+}
